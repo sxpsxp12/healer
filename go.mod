@@ -1,4 +1,4 @@
-module github.com/childe/healer
+module github.com/sxpsxp12/healer
 
 go 1.15
 
