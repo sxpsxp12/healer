@@ -103,16 +103,31 @@ func newConn(address string, config *BrokerConfig) (net.Conn, error) {
 	}
 
 	if config.TLSEnabled {
-		if config.TLS == nil || config.TLS.Cert == "" || config.TLS.Key == "" || config.TLS.CA == "" {
-			return nil, errTLSConfig
+		if config.TLS == nil {
+			return tls.DialWithDialer(&dialer, "tcp", address, createDefaultTLSConfig())
 		}
-		if tlsConfig, err := createTLSConfig(config.TLS); err != nil {
-			return nil, err
+		if len(config.TLS.Cert) != 0 && len(config.TLS.Key) != 0 && len(config.TLS.CA) != 0 {
+			if tlsConfig, err := createTLSConfig(config.TLS); err != nil {
+				return nil, err
+			} else {
+				return tls.DialWithDialer(&dialer, "tcp", address, tlsConfig)
+			}
 		} else {
-			return tls.DialWithDialer(&dialer, "tcp", address, tlsConfig)
+			return tls.DialWithDialer(&dialer, "tcp", address, createSkipVerifyTLSConfig(config.TLS))
 		}
 	} else {
 		return dialer.Dial("tcp", address)
+	}
+}
+
+func createDefaultTLSConfig() *tls.Config {
+	return &tls.Config{
+		InsecureSkipVerify: true,
+	}
+}
+func createSkipVerifyTLSConfig(tlsConfig *TLSConfig) *tls.Config {
+	return &tls.Config{
+		InsecureSkipVerify: tlsConfig.InsecureSkipVerify,
 	}
 }
 
